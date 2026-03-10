@@ -1,0 +1,80 @@
+# ========================================
+# Flash Sale System - .gitignore
+# ========================================
+
+# -------------------- Java / Maven --------------------
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+*.ctxt
+.mtj.tmp/
+hs_err_pid*
+replay_pid*
+
+# -------------------- Spring Boot --------------------
+application-local.yml
+application-local.properties
+
+# -------------------- Maven --------------------
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# -------------------- IDE --------------------
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# -------------------- Node.js / Frontend --------------------
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# -------------------- OS --------------------
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# -------------------- Docker --------------------
+docker-compose.override.yml
+
+# -------------------- Redis --------------------
+dump.rdb
+
+# -------------------- JMeter --------------------
+*.jtl
+*.log
+
+# -------------------- Misc --------------------
+*.bak
+*.tmp
+*.temp
