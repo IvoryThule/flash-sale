@@ -26,6 +26,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/product/**",
                         "/seckill/events",
                         "/seckill/event/**",
+                        "/health",
                         "/error"
                 );
     }

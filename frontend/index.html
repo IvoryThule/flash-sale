@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flash Sale - 用户联调页</title>
+  <link rel="stylesheet" href="./style.css" />
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+  <div id="app" class="container">
+    <h1>秒杀系统用户联调</h1>
+
+    <div class="card">
+      <h2>后端地址</h2>
+      <input v-model="baseUrl" placeholder="http://localhost:8080/api" />
+    </div>
+
+    <div class="card">
+      <h2>注册</h2>
+      <div class="grid">
+        <input v-model="registerForm.username" placeholder="用户名" />
+        <input v-model="registerForm.password" type="password" placeholder="密码" />
+        <input v-model="registerForm.nickname" placeholder="昵称" />
+        <input v-model="registerForm.phone" placeholder="手机号" />
+      </div>
+      <button @click="register">提交注册</button>
+    </div>
+
+    <div class="card">
+      <h2>登录</h2>
+      <div class="grid">
+        <input v-model="loginForm.username" placeholder="用户名" />
+        <input v-model="loginForm.password" type="password" placeholder="密码" />
+      </div>
+      <button @click="login">登录</button>
+      <p v-if="token" class="token">Token: {{ token }}</p>
+    </div>
+
+    <div class="card">
+      <h2>当前用户信息</h2>
+      <button @click="loadUserInfo">获取 /user/info</button>
+    </div>
+
+    <div class="card">
+      <h2>响应结果</h2>
+      <pre>{{ result }}</pre>
+    </div>
+  </div>
+
+  <script src="./main.js"></script>
+</body>
+</html>
