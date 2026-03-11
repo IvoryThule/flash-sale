@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flashsale.mapper.ProductMapper">
+
+    <resultMap id="productMap" type="com.flashsale.entity.Product">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="description" property="description"/>
+        <result column="image" property="image"/>
+        <result column="price" property="price"/>
+        <result column="category" property="category"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="productMap">
+        SELECT * FROM products WHERE id = #{id}
+    </select>
+
+    <select id="selectOnShelfList" resultMap="productMap">
+        SELECT * FROM products WHERE status = 1 ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByCategory" resultMap="productMap">
+        SELECT * FROM products WHERE status = 1 AND category = #{category} ORDER BY created_at DESC
+    </select>
+
+</mapper>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flashsale.mapper.SeckillEventMapper">
+
+    <resultMap id="eventMap" type="com.flashsale.entity.SeckillEvent">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="product_id" property="productId"/>
+        <result column="seckill_price" property="seckillPrice"/>
+        <result column="start_time" property="startTime"/>
+        <result column="end_time" property="endTime"/>
+        <result column="total_stock" property="totalStock"/>
+        <result column="available_stock" property="availableStock"/>
+        <result column="limit_per_user" property="limitPerUser"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="eventMap">
+        SELECT * FROM seckill_events WHERE id = #{id}
+    </select>
+
+    <select id="selectOngoingEvents" resultMap="eventMap">
+        SELECT * FROM seckill_events
+        WHERE status = 1
+          AND start_time &lt;= NOW()
+          AND end_time &gt;= NOW()
+        ORDER BY start_time ASC
+    </select>
+
+    <select id="selectByProductId" resultMap="eventMap">
+        SELECT * FROM seckill_events
+        WHERE product_id = #{productId}
+        ORDER BY start_time DESC
+    </select>
+
+    <update id="deductStock">
+        UPDATE seckill_events
+        SET available_stock = available_stock - #{quantity}
+        WHERE id = #{id} AND available_stock >= #{quantity}
+    </update>
+
+    <update id="restoreStock">
+        UPDATE seckill_events
+        SET available_stock = available_stock + #{quantity}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE seckill_events SET status = #{status} WHERE id = #{id}
+    </update>
+
+</mapper>

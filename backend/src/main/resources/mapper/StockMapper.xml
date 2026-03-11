@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flashsale.mapper.StockMapper">
+
+    <resultMap id="stockMap" type="com.flashsale.entity.Stock">
+        <id column="id" property="id"/>
+        <result column="product_id" property="productId"/>
+        <result column="event_id" property="eventId"/>
+        <result column="total" property="total"/>
+        <result column="available" property="available"/>
+        <result column="locked" property="locked"/>
+        <result column="sold" property="sold"/>
+        <result column="version" property="version"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="selectByEventId" resultMap="stockMap">
+        SELECT * FROM stock WHERE event_id = #{eventId}
+    </select>
+
+    <!-- 乐观锁扣减库存（核心防超卖 SQL） -->
+    <update id="deductStock">
+        UPDATE stock
+        SET available = available - #{quantity},
+            locked = locked + #{quantity},
+            version = version + 1
+        WHERE event_id = #{eventId}
+          AND version = #{version}
+          AND available >= #{quantity}
+    </update>
+
+    <!-- 确认出库：锁定库存转为已售 -->
+    <update id="confirmSold">
+        UPDATE stock
+        SET locked = locked - #{quantity},
+            sold = sold + #{quantity},
+            version = version + 1
+        WHERE event_id = #{eventId}
+          AND locked >= #{quantity}
+    </update>
+
+    <!-- 释放锁定库存：超时取消订单时回补 -->
+    <update id="releaseLocked">
+        UPDATE stock
+        SET locked = locked - #{quantity},
+            available = available + #{quantity},
+            version = version + 1
+        WHERE event_id = #{eventId}
+          AND locked >= #{quantity}
+    </update>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO stock (product_id, event_id, total, available, locked, sold, version)
+        VALUES (#{productId}, #{eventId}, #{total}, #{available}, #{locked}, #{sold}, #{version})
+    </insert>
+
+</mapper>
