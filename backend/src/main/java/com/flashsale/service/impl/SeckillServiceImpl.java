@@ -152,6 +152,7 @@ public class SeckillServiceImpl implements SeckillService {
         }
 
         Long remain = null;
+        boolean markedPending = false;
         String requestId = String.valueOf(snowflakeIdGenerator.nextId());
         String resultKey = Constants.REDIS_SECKILL_RESULT + requestId;
         String reqMapKey = Constants.REDIS_SECKILL_REQ_MAP + requestId;
@@ -175,6 +176,7 @@ public class SeckillServiceImpl implements SeckillService {
                 ttlSeconds = Math.max(Duration.between(now, event.getEndTime()).getSeconds(), ttlSeconds);
             }
             stringRedisTemplate.opsForValue().set(userSeckillKey, "PENDING", ttlSeconds, TimeUnit.SECONDS);
+            markedPending = true;
             stringRedisTemplate.opsForValue().set(resultKey, "PROCESSING", 1, TimeUnit.DAYS);
             stringRedisTemplate.opsForValue().set(reqMapKey, userId + ":" + eventId, 1, TimeUnit.DAYS);
 
@@ -183,7 +185,7 @@ public class SeckillServiceImpl implements SeckillService {
             msg.setUserId(userId);
             msg.setEventId(eventId);
             msg.setSendTimestamp(System.currentTimeMillis());
-            kafkaTemplate.send(seckillTopic, String.valueOf(eventId), toJson(msg));
+            kafkaTemplate.send(seckillTopic, String.valueOf(eventId), toJson(msg)).get(5, TimeUnit.SECONDS);
 
             if (remain == 0) {
                 stringRedisTemplate.opsForValue().set(soldOutKey, "1", 1, TimeUnit.HOURS);
@@ -195,7 +197,9 @@ public class SeckillServiceImpl implements SeckillService {
             }
             stringRedisTemplate.delete(resultKey);
             stringRedisTemplate.delete(reqMapKey);
-            stringRedisTemplate.delete(userSeckillKey);
+            if (markedPending) {
+                stringRedisTemplate.delete(userSeckillKey);
+            }
             throw ex;
         } catch (Exception ex) {
             if (remain != null && remain >= 0) {
@@ -203,7 +207,9 @@ public class SeckillServiceImpl implements SeckillService {
             }
             stringRedisTemplate.delete(resultKey);
             stringRedisTemplate.delete(reqMapKey);
-            stringRedisTemplate.delete(userSeckillKey);
+            if (markedPending) {
+                stringRedisTemplate.delete(userSeckillKey);
+            }
             throw new BusinessException(ResultCode.SECKILL_BUSY);
         } finally {
             stringRedisTemplate.delete(userLockKey);
