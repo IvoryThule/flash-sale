@@ -4,13 +4,21 @@ import com.flashsale.common.BusinessException;
 import com.flashsale.common.Constants;
 import com.flashsale.common.ResultCode;
 import com.flashsale.entity.Order;
+import com.flashsale.entity.Product;
+import com.flashsale.entity.SeckillEvent;
 import com.flashsale.entity.SeckillOrder;
 import com.flashsale.mapper.OrderMapper;
+import com.flashsale.mapper.ProductMapper;
+import com.flashsale.mapper.SeckillEventMapper;
 import com.flashsale.mapper.SeckillOrderMapper;
 import com.flashsale.mapper.StockMapper;
+import com.flashsale.datasource.Master;
 import com.flashsale.service.OrderService;
+import com.flashsale.util.SnowflakeIdGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,14 +35,83 @@ import java.util.List;
 public class OrderServiceImpl implements OrderService {
 
     private final OrderMapper orderMapper;
+    private final SeckillEventMapper seckillEventMapper;
+    private final ProductMapper productMapper;
     private final SeckillOrderMapper seckillOrderMapper;
     private final StockMapper stockMapper;
     private final StringRedisTemplate stringRedisTemplate;
+    private final SnowflakeIdGenerator snowflakeIdGenerator;
+
+    @Value("${flash-sale.seckill.order-expire-minutes:15}")
+    private int orderExpireMinutes;
 
     @Override
+    @Master
+    @Transactional(rollbackFor = Exception.class)
     public Order createSeckillOrder(Long userId, Long eventId) {
-        // 此方法在 SeckillService 中被调用，具体实现在 Step 7/8 完善
-        throw new UnsupportedOperationException("将在 Step 7/8 中实现");
+        SeckillEvent event = seckillEventMapper.selectById(eventId);
+        if (event == null) {
+            throw new BusinessException(ResultCode.SECKILL_EVENT_NOT_FOUND);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (event.getStartTime() != null && now.isBefore(event.getStartTime())) {
+            throw new BusinessException(ResultCode.SECKILL_NOT_START);
+        }
+        if (event.getEndTime() != null && now.isAfter(event.getEndTime())) {
+            throw new BusinessException(ResultCode.SECKILL_ENDED);
+        }
+
+        SeckillOrder existed = seckillOrderMapper.selectByUserIdAndEventId(userId, eventId);
+        if (existed != null) {
+            throw new BusinessException(ResultCode.SECKILL_REPEATED);
+        }
+
+        // 基于 stock.version 的乐观锁扣减，防止超卖。
+        var stock = stockMapper.selectByEventId(eventId);
+        if (stock == null || stock.getAvailable() == null || stock.getAvailable() <= 0) {
+            throw new BusinessException(ResultCode.SECKILL_SOLD_OUT);
+        }
+        int affected = stockMapper.deductStock(eventId, 1, stock.getVersion());
+        if (affected == 0) {
+            throw new BusinessException(ResultCode.SECKILL_SOLD_OUT);
+        }
+
+        Product product = productMapper.selectById(event.getProductId());
+        if (product == null) {
+            throw new BusinessException(ResultCode.PRODUCT_NOT_FOUND);
+        }
+
+        Order order = new Order();
+        order.setOrderNo(String.valueOf(snowflakeIdGenerator.nextId()));
+        order.setUserId(userId);
+        order.setProductId(product.getId());
+        order.setEventId(eventId);
+        order.setProductName(product.getName());
+        order.setProductImage(product.getImage());
+        order.setQuantity(1);
+        order.setUnitPrice(event.getSeckillPrice());
+        order.setTotalPrice(event.getSeckillPrice());
+        order.setOrderType(Constants.ORDER_TYPE_SECKILL);
+        order.setStatus(Constants.ORDER_STATUS_UNPAID);
+        order.setExpireTime(now.plusMinutes(orderExpireMinutes));
+        orderMapper.insert(order);
+
+        SeckillOrder seckillOrder = new SeckillOrder();
+        seckillOrder.setUserId(userId);
+        seckillOrder.setProductId(product.getId());
+        seckillOrder.setEventId(eventId);
+        seckillOrder.setOrderId(order.getId());
+        seckillOrder.setStatus(1);
+
+        try {
+            seckillOrderMapper.insert(seckillOrder);
+        } catch (DuplicateKeyException e) {
+            throw new BusinessException(ResultCode.SECKILL_REPEATED);
+        }
+
+        log.info("秒杀订单创建成功: userId={}, eventId={}, orderId={}", userId, eventId, order.getId());
+        return order;
     }
 
     @Override
