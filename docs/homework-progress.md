@@ -39,10 +39,10 @@
 - [x] 代码层读写路由测试基础（AOP + 注解）
 
 ## 8. 消息队列
-- [ ] Kafka 异步下单（未实现）
+- [~] Kafka 异步下单（本次已实现基础链路：异步提交/消费创建订单/结果查询）
 - [x] 雪花算法订单号（本次已实现）
 - [x] 幂等性（用户-活动唯一约束 + Redis 标记）
-- [~] 一致性（当前为同步事务 + Redis 回补；未实现 MQ 最终一致）
+- [~] 一致性（已实现基础回补与消费幂等；未实现严格生产级事务消息）
 
 ## 9. 分库分表（选做）
 - [ ] ShardingSphere 未实现
@@ -68,3 +68,9 @@
 - [x] 完成秒杀订单创建（OrderServiceImpl.createSeckillOrder）
 - [x] 完成 Redis 库存预热（SeckillServiceImpl.preheatStock）
 - [x] 编译验证通过（mvn -DskipTests compile）
+
+## 本次新增（小步 2）
+- [x] 接入 Kafka 依赖与配置（Spring Kafka + application.yml）
+- [x] 新增异步秒杀提交接口：POST /api/seckill/async/{eventId}
+- [x] 新增异步结果查询接口：GET /api/seckill/result/{requestId}
+- [x] 实现 Kafka 消费者异步落单与失败回补

@@ -70,6 +70,20 @@ spring:
       write-dates-as-timestamps: false
     default-property-inclusion: non_null
 
+  # -------------------- Kafka --------------------
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+    consumer:
+      group-id: ${KAFKA_GROUP_ID:flash-sale-seckill-group}
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
 # ==================== MyBatis Configuration ====================
 # 注意：SqlSessionFactory 由 DataSourceConfig 手动创建（读写分离需要），
 # 以下配置作为文档保留，实际生效的配置在 DataSourceConfig.sqlSessionFactory()
@@ -94,3 +108,10 @@ flash-sale:
     expiration: 86400000  # 24 hours in milliseconds
   seckill:
     order-expire-minutes: 15  # 订单支付超时时间（分钟）
+    async-enabled: ${FLASH_SALE_ASYNC_ENABLED:false}
+  kafka:
+    enabled: ${FLASH_SALE_KAFKA_ENABLED:false}
+    seckill-topic: ${FLASH_SALE_KAFKA_TOPIC:flash-sale-seckill-order}
+  id:
+    worker-id: ${FLASH_SALE_WORKER_ID:1}
+    datacenter-id: ${FLASH_SALE_DATACENTER_ID:1}

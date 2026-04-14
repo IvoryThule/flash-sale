@@ -27,6 +27,15 @@ public final class Constants {
     /** 秒杀结束标记 Key: seckill:over:{eventId} */
     public static final String REDIS_SECKILL_OVER = "seckill:over:";
 
+    /** 异步秒杀请求结果 Key: seckill:result:{requestId} */
+    public static final String REDIS_SECKILL_RESULT = "seckill:result:";
+
+    /** 异步秒杀请求映射 Key: seckill:reqmap:{requestId}，value=userId:eventId */
+    public static final String REDIS_SECKILL_REQ_MAP = "seckill:reqmap:";
+
+    /** 异步消息消费幂等 Key: seckill:msg:done:{requestId} */
+    public static final String REDIS_SECKILL_MSG_DONE = "seckill:msg:done:";
+
     /** JWT Token 前缀 */
     public static final String TOKEN_PREFIX = "Bearer ";
 
