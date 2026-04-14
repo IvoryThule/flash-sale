@@ -12,20 +12,36 @@ spring:
   application:
     name: flash-sale-api
 
-  # -------------------- DataSource (Druid) --------------------
+  # -------------------- 读写分离双数据源 --------------------
+  # 主库（写）：DB_HOST / DB_PORT
+  # 从库（读）：DB_REPLICA_HOST / DB_REPLICA_PORT（默认与主库同 Host 但用 3308）
+  autoconfigure:
+    exclude:
+      - com.alibaba.druid.spring.boot3.autoconfigure.DruidDataSourceAutoConfigure
+
   datasource:
-    type: com.alibaba.druid.pool.DruidDataSource
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3307}/${DB_NAME:flash_sale}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root}
-    druid:
+    master:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3307}/${DB_NAME:flash_sale}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      username: ${DB_USERNAME:root}
+      password: ${DB_PASSWORD:root}
       initial-size: 5
       min-idle: 5
       max-active: 20
       max-wait: 60000
-      time-between-eviction-runs-millis: 60000
-      min-evictable-idle-time-millis: 300000
+      validation-query: SELECT 1
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+    slave:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://${DB_REPLICA_HOST:localhost}:${DB_REPLICA_PORT:3308}/${DB_NAME:flash_sale}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      username: ${DB_USERNAME:root}
+      password: ${DB_PASSWORD:root}
+      initial-size: 3
+      min-idle: 3
+      max-active: 10
+      max-wait: 60000
       validation-query: SELECT 1
       test-while-idle: true
       test-on-borrow: false
@@ -55,6 +71,8 @@ spring:
     default-property-inclusion: non_null
 
 # ==================== MyBatis Configuration ====================
+# 注意：SqlSessionFactory 由 DataSourceConfig 手动创建（读写分离需要），
+# 以下配置作为文档保留，实际生效的配置在 DataSourceConfig.sqlSessionFactory()
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.flashsale.entity
@@ -67,6 +85,7 @@ logging:
   level:
     com.flashsale: debug
     com.flashsale.mapper: debug
+    com.flashsale.config.datasource: debug   # 打印数据源路由日志（方便验证读写分离）
 
 # ==================== Custom Configuration ====================
 flash-sale:

@@ -5,6 +5,7 @@ import com.flashsale.common.ResultCode;
 import com.flashsale.entity.User;
 import com.flashsale.mapper.UserMapper;
 import com.flashsale.service.UserService;
+import com.flashsale.datasource.Master;
 import com.flashsale.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ public class UserServiceImpl implements UserService {
 
     private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder();
 
+    @Master  // 写操作：强制路由到主库
     @Override
     public User register(String username, String password, String nickname, String phone) {
         // 检查用户名是否已存在

@@ -3,52 +3,110 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Flash Sale - 用户联调页</title>
+  <title>FlashSale 秒杀平台</title>
   <link rel="stylesheet" href="./style.css" />
-  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body>
-  <div id="app" class="container">
-    <h1>秒杀系统用户联调</h1>
 
-    <div class="card">
-      <h2>后端地址</h2>
-      <input v-model="baseUrl" placeholder="http://localhost:8080/api" />
-    </div>
-
-    <div class="card">
-      <h2>注册</h2>
-      <div class="grid">
-        <input v-model="registerForm.username" placeholder="用户名" />
-        <input v-model="registerForm.password" type="password" placeholder="密码" />
-        <input v-model="registerForm.nickname" placeholder="昵称" />
-        <input v-model="registerForm.phone" placeholder="手机号" />
-      </div>
-      <button @click="register">提交注册</button>
-    </div>
-
-    <div class="card">
-      <h2>登录</h2>
-      <div class="grid">
-        <input v-model="loginForm.username" placeholder="用户名" />
-        <input v-model="loginForm.password" type="password" placeholder="密码" />
-      </div>
-      <button @click="login">登录</button>
-      <p v-if="token" class="token">Token: {{ token }}</p>
-    </div>
-
-    <div class="card">
-      <h2>当前用户信息</h2>
-      <button @click="loadUserInfo">获取 /user/info</button>
-    </div>
-
-    <div class="card">
-      <h2>响应结果</h2>
-      <pre>{{ result }}</pre>
-    </div>
+<!-- ===== 顶部导航 ===== -->
+<header class="navbar">
+  <div class="nav-brand">⚡ FlashSale</div>
+  <nav class="nav-links">
+    <a href="#products">商品列表</a>
+    <a href="#seckill">秒杀活动</a>
+    <a href="#orders">我的订单</a>
+  </nav>
+  <div class="nav-user">
+    <span id="navUsername" class="nav-username hidden"></span>
+    <button id="btnShowLogin" class="btn btn-outline btn-sm" onclick="showModal('loginModal')">登录</button>
+    <button id="btnLogout" class="btn btn-outline btn-sm hidden" onclick="logout()">退出</button>
   </div>
+</header>
 
-  <script src="./main.js"></script>
+<!-- ===== 英雄区 ===== -->
+<section class="hero">
+  <h1>限时抢购，极速秒杀</h1>
+  <p>高并发分布式秒杀系统 · Redis 缓存 · Nginx 负载均衡</p>
+  <a href="#products" class="btn btn-primary btn-lg">立即抢购</a>
+</section>
+
+<!-- ===== 商品列表 ===== -->
+<section id="products" class="section">
+  <h2 class="section-title">热销商品</h2>
+  <div id="productGrid" class="product-grid">
+    <div class="skeleton-card"></div>
+    <div class="skeleton-card"></div>
+    <div class="skeleton-card"></div>
+  </div>
+</section>
+
+<!-- ===== 秒杀活动 ===== -->
+<section id="seckill" class="section section-dark">
+  <h2 class="section-title">秒杀活动</h2>
+  <div class="seckill-banner">
+    <div class="countdown" id="countdown">--:--:--</div>
+    <p class="seckill-tip">距本场结束</p>
+  </div>
+  <div id="seckillArea" class="seckill-grid"></div>
+</section>
+
+<!-- ===== 我的订单 ===== -->
+<section id="orders" class="section">
+  <h2 class="section-title">我的订单</h2>
+  <div id="orderArea" class="order-area">
+    <p class="empty-tip">请先登录查看订单</p>
+  </div>
+</section>
+
+<!-- ===== 系统信息框（展示后端节点，验证负载均衡）===== -->
+<div class="info-bar" id="infoBar">
+  <span>后端节点：<strong id="upstreamNode">-</strong></span>
+  <span>响应时间：<strong id="responseTime">-</strong> ms</span>
+  <span>缓存命中：<strong id="cacheHit">-</strong></span>
+</div>
+
+<!-- ===== 登录模态框 ===== -->
+<div id="loginModal" class="modal-overlay hidden" onclick="closeModal(event,'loginModal')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <h3>用户登录</h3>
+    <input id="loginUsername" class="form-input" placeholder="用户名" />
+    <input id="loginPassword" class="form-input" type="password" placeholder="密码" />
+    <button class="btn btn-primary w-full" onclick="login()">登录</button>
+    <p class="modal-switch">没有账号？<a href="#" onclick="switchModal('loginModal','registerModal')">注册</a></p>
+    <p id="loginError" class="error-msg hidden"></p>
+  </div>
+</div>
+
+<!-- ===== 注册模态框 ===== -->
+<div id="registerModal" class="modal-overlay hidden" onclick="closeModal(event,'registerModal')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <h3>新用户注册</h3>
+    <input id="regUsername" class="form-input" placeholder="用户名（4-20位）" />
+    <input id="regPassword" class="form-input" type="password" placeholder="密码（至少6位）" />
+    <input id="regNickname" class="form-input" placeholder="昵称" />
+    <input id="regPhone" class="form-input" placeholder="手机号（可选）" />
+    <button class="btn btn-primary w-full" onclick="register()">注册</button>
+    <p class="modal-switch">已有账号？<a href="#" onclick="switchModal('registerModal','loginModal')">登录</a></p>
+    <p id="regError" class="error-msg hidden"></p>
+    <p id="regSuccess" class="success-msg hidden"></p>
+  </div>
+</div>
+
+<!-- ===== 商品详情/秒杀模态框 ===== -->
+<div id="buyModal" class="modal-overlay hidden" onclick="closeModal(event,'buyModal')">
+  <div class="modal-box modal-wide" onclick="event.stopPropagation()">
+    <div id="buyContent"></div>
+    <button class="btn btn-ghost w-full" style="margin-top:12px" onclick="hideModal('buyModal')">关闭</button>
+  </div>
+</div>
+
+<!-- ===== Toast 通知 ===== -->
+<div id="toast" class="toast hidden"></div>
+
+<footer class="footer">
+  <p>FlashSale 演示系统 · 动静分离 · 负载均衡 · Redis 缓存 · 读写分离</p>
+</footer>
+
+<script src="./app.js"></script>
 </body>
 </html>
